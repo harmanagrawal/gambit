@@ -245,6 +245,19 @@ def _estimate_behavior_empirical(
         data, "empirical", res.x[0], profile, -res.fun
     )
 
+def rational_to_float_conversion(profile):
+    if isinstance(profile, libgbt.MixedStrategyProfile):
+        float_profile = profile.game.mixed_strategy_profile()
+    elif isinstance(profile, libgbt.MixedBehaviorProfile): 
+        float_profile = profile.game.mixed_behaviour_profile()
+    else:
+        raise TypeError("data must be specified as a MixedStrategyProfile or MixedBehaviorProfile")
+    for i in profile:
+        if isinstance(profile[i], fractions.Fraction):
+            float_profile[i] = float(profile[i])
+        else:
+            float_profile[i] = float(profile[i])
+    return float_profile
 
 def logit_estimate(
         data: libgbt.MixedStrategyProfile | libgbt.MixedBehaviorProfile,
@@ -313,6 +326,7 @@ def logit_estimate(
         as a structural model for estimation: The missing manual.
         SSRN working paper 4425515.
     """
+    data = rational_to_float_conversion(data)
     if isinstance(data, libgbt.MixedStrategyProfile):
         if use_empirical:
             return _estimate_strategy_empirical(data)
