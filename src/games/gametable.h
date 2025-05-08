@@ -36,7 +36,7 @@ class GameTableRep : public GameExplicitRep {
   template <class T> friend class TableMixedStrategyProfileRep;
 
 private:
-  Array<GameOutcomeRep *> m_results;
+  std::vector<GameOutcomeRep *> m_results;
 
   /// @name Private auxiliary functions
   //@{
@@ -49,7 +49,7 @@ public:
   //@{
   /// Construct a new table game with the given dimension
   /// If p_sparseOutcomes = true, outcomes for all contingencies are left null
-  explicit GameTableRep(const Array<int> &p_dim, bool p_sparseOutcomes = false);
+  explicit GameTableRep(const std::vector<int> &p_dim, bool p_sparseOutcomes = false);
   Game Copy() const override;
   //@}
 
@@ -89,13 +89,21 @@ public:
   /// Returns the root node of the game
   GameNode GetRoot() const override { throw UndefinedException(); }
   /// Returns the number of nodes in the game
-  int NumNodes() const override { throw UndefinedException(); }
+  size_t NumNodes() const override { throw UndefinedException(); }
+  /// Returns the number of non-terminal nodes in the game
+  size_t NumNonterminalNodes() const override { throw UndefinedException(); }
   //@}
 
   /// @name Outcomes
   //@{
   /// Deletes the specified outcome from the game
   void DeleteOutcome(const GameOutcome &) override;
+  //@}
+
+  /// @name Strategies
+  //@{
+  GameStrategy NewStrategy(const GamePlayer &, const std::string &) override;
+  void DeleteStrategy(const GameStrategy &p_strategy) override;
   //@}
 
   /// @name Writing data files

@@ -2,6 +2,7 @@ from libcpp cimport bool
 from libcpp.string cimport string
 from libcpp.memory cimport shared_ptr, unique_ptr
 from libcpp.list cimport list as stdlist
+from libcpp.vector cimport vector as stdvector
 
 
 cdef extern from "gambit.h":
@@ -76,6 +77,7 @@ cdef extern from "games/game.h":
         c_GameActionRep *deref "operator->"() except +RuntimeError
 
     cdef cppclass c_GameInfoset "GameObjectPtr<GameInfosetRep>":
+        bool operator ==(c_GameInfoset) except +
         bool operator !=(c_GameInfoset) except +
         c_GameInfosetRep *deref "operator->"() except +RuntimeError
 
@@ -95,13 +97,11 @@ cdef extern from "games/game.h":
         c_GamePlayer GetPlayer() except +
         string GetLabel() except +
         void SetLabel(string) except +
-        void DeleteStrategy() except +
 
     cdef cppclass c_GameActionRep "GameActionRep":
         int GetNumber() except +
         c_GameInfoset GetInfoset() except +
         bint Precedes(c_GameNode) except +
-        void DeleteAction() except +ValueError
 
         string GetLabel() except +
         void SetLabel(string) except +
@@ -110,21 +110,17 @@ cdef extern from "games/game.h":
         int GetNumber() except +
         c_Game GetGame() except +
         c_GamePlayer GetPlayer() except +
-        void SetPlayer(c_GamePlayer) except +
 
         string GetLabel() except +
         void SetLabel(string) except +
 
         int NumActions() except +
         c_GameAction GetAction(int) except +IndexError
-        c_GameAction InsertAction(c_GameAction) except +ValueError
-
         c_Number GetActionProb(c_GameAction) except +IndexError
 
         int NumMembers() except +
         c_GameNode GetMember(int) except +IndexError
 
-        void Reveal(c_GamePlayer) except +
         bint IsChanceInfoset() except +
         bint Precedes(c_GameNode) except +
 
@@ -141,7 +137,6 @@ cdef extern from "games/game.h":
 
         int NumInfosets() except +
         c_GameInfoset GetInfoset(int) except +IndexError
-        c_GameStrategy NewStrategy() except +
 
     cdef cppclass c_GameOutcomeRep "GameOutcomeRep":
         c_Game GetGame() except +
@@ -161,29 +156,17 @@ cdef extern from "games/game.h":
         void SetLabel(string) except +
 
         c_GameInfoset GetInfoset() except +
-        void SetInfoset(c_GameInfoset) except +ValueError
-        c_GameInfoset LeaveInfoset() except +
         c_GamePlayer GetPlayer() except +
         c_GameNode GetParent() except +
         int NumChildren() except +
-        c_GameNode GetChild(int) except +IndexError
+        c_GameNode GetChild(c_GameAction) except +IndexError
         c_GameOutcome GetOutcome() except +
-        void SetOutcome(c_GameOutcome) except +
         c_GameNode GetPriorSibling() except +
         c_GameNode GetNextSibling() except +
         bint IsTerminal() except +
         bint IsSuccessorOf(c_GameNode) except +
         bint IsSubgameRoot() except +
         c_GameAction GetPriorAction() except +
-
-        c_GameInfoset AppendMove(c_GamePlayer, int) except +ValueError
-        c_GameInfoset AppendMove(c_GameInfoset) except +ValueError
-        c_GameInfoset InsertMove(c_GamePlayer, int) except +ValueError
-        c_GameInfoset InsertMove(c_GameInfoset) except +ValueError
-        void DeleteParent() except +
-        void DeleteTree() except +
-        void CopyTree(c_GameNode) except +ValueError
-        void MoveTree(c_GameNode) except +ValueError
 
     cdef cppclass c_GameRep "GameRep":
         int IsTree() except +
@@ -206,9 +189,12 @@ cdef extern from "games/game.h":
         void DeleteOutcome(c_GameOutcome) except +
 
         int NumNodes() except +
+        int NumNonterminalNodes() except +
         c_GameNode GetRoot() except +
 
         c_GameStrategy GetStrategy(int) except +IndexError
+        c_GameStrategy NewStrategy(c_GamePlayer, string) except +
+        void DeleteStrategy(c_GameStrategy) except +
         int MixedProfileLength() except +
 
         c_GameInfoset GetInfoset(int) except +IndexError
@@ -218,17 +204,34 @@ cdef extern from "games/game.h":
         int BehavProfileLength() except +
 
         bool IsConstSum() except +
-        c_Rational GetMinPayoff(int) except +
-        c_Rational GetMaxPayoff(int) except +
+        c_Rational GetMinPayoff() except +
+        c_Rational GetMinPayoff(c_GamePlayer) except +
+        c_Rational GetMaxPayoff() except +
+        c_Rational GetMaxPayoff(c_GamePlayer) except +
         bool IsPerfectRecall() except +
 
+        c_GameInfoset AppendMove(c_GameNode, c_GamePlayer, int) except +ValueError
+        c_GameInfoset AppendMove(c_GameNode, c_GameInfoset) except +ValueError
+        c_GameInfoset InsertMove(c_GameNode, c_GamePlayer, int) except +ValueError
+        c_GameInfoset InsertMove(c_GameNode, c_GameInfoset) except +ValueError
+        void CopyTree(c_GameNode dest, c_GameNode src) except +ValueError
+        void MoveTree(c_GameNode dest, c_GameNode src) except +ValueError
+        void DeleteParent(c_GameNode) except +
+        void DeleteTree(c_GameNode) except +
+        void SetPlayer(c_GameInfoset, c_GamePlayer) except +
+        void Reveal(c_GameInfoset, c_GamePlayer) except +
+        void SetInfoset(c_GameNode, c_GameInfoset) except +ValueError
+        c_GameInfoset LeaveInfoset(c_GameNode) except +
+        c_GameAction InsertAction(c_GameInfoset, c_GameAction) except +ValueError
+        void DeleteAction(c_GameAction) except +ValueError
+        void SetOutcome(c_GameNode, c_GameOutcome) except +
         c_Game SetChanceProbs(c_GameInfoset, Array[c_Number]) except +
 
         c_PureStrategyProfile NewPureStrategyProfile()  # except + doesn't compile
         c_MixedStrategyProfile[T] NewMixedStrategyProfile[T](T)  # except + doesn't compile
 
     c_Game NewTree() except +
-    c_Game NewTable(Array[int]) except +
+    c_Game NewTable(stdvector[int]) except +
 
 
 cdef extern from "games/stratpure.h":
